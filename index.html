@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Plan six study sessions across a 12-week schedule from one starting date."
+    />
+    <title>Session Schedule Planner</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="hero">
+        <div class="eyebrow">12-week study planner</div>
+        <h1>Six dates.<br /><span>One starting point.</span></h1>
+        <p class="intro">
+          Choose the date of your first session and instantly see every date you’ll
+          need to check with the lab and your participants.
+        </p>
+      </header>
+
+      <section class="planner" aria-labelledby="planner-title">
+        <div class="input-panel">
+          <div>
+            <p class="section-number">01</p>
+            <h2 id="planner-title">Set your first session</h2>
+            <p class="helper">All later sessions stay on the same day of the week.</p>
+          </div>
+
+          <form id="schedule-form">
+            <label for="start-date">First session date</label>
+            <div class="date-row">
+              <input id="start-date" name="start-date" type="date" required />
+              <button type="submit">Build schedule <span aria-hidden="true">→</span></button>
+            </div>
+            <p class="error" id="date-error" role="alert" hidden>Please choose a valid date.</p>
+          </form>
+
+          <div class="pattern" aria-label="Session spacing pattern">
+            <span>Spacing pattern</span>
+            <div class="pattern-track" aria-hidden="true">
+              <i class="active"></i><b>1</b><i></i><b>2</b><i></i><b>3</b><i></i><b>3</b><i></i><b>2</b><i></i>
+            </div>
+            <small>Weeks between sessions</small>
+          </div>
+        </div>
+
+        <div class="results-panel" id="results-panel" aria-live="polite">
+          <div class="results-header">
+            <div>
+              <p class="section-number">02</p>
+              <h2>Your schedule</h2>
+            </div>
+            <div class="actions" id="schedule-actions" hidden>
+              <button class="secondary" id="copy-button" type="button">Copy dates</button>
+              <button class="secondary" id="calendar-button" type="button">Add to calendar</button>
+            </div>
+          </div>
+
+          <div id="empty-state" class="empty-state">
+            <div class="empty-icon" aria-hidden="true">↗</div>
+            <p>Your six session dates will appear here.</p>
+          </div>
+
+          <ol id="schedule-list" class="schedule-list" hidden></ol>
+          <p id="schedule-summary" class="schedule-summary" hidden></p>
+        </div>
+      </section>
+
+      <footer>
+        <span>Session cadence</span>
+        <span>Week 0 · 1 · 3 · 6 · 9 · 11</span>
+      </footer>
+    </main>
+  </body>
+</html>
