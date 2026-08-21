@@ -27,6 +27,7 @@ Then visit <http://localhost:8000>.
 
 - Uses one date to calculate all six sessions
 - Preserves the weekday for every session
+- Displays session dates in month-by-month calendars
 - Copies the full schedule to the clipboard
 - Downloads all sessions as an `.ics` calendar file
 - Responsive and printable layout

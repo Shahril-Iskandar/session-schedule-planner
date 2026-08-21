@@ -9,6 +9,8 @@ const scheduleSummary = document.querySelector("#schedule-summary");
 const scheduleActions = document.querySelector("#schedule-actions");
 const copyButton = document.querySelector("#copy-button");
 const calendarButton = document.querySelector("#calendar-button");
+const calendarSection = document.querySelector("#calendar-section");
+const calendarMonths = document.querySelector("#calendar-months");
 
 let currentDates = [];
 
@@ -42,6 +44,92 @@ function formatShort(date) {
   }).format(date);
 }
 
+function dateKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function getMonthsBetween(startDate, endDate) {
+  const months = [];
+  const cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1, 12);
+  const finalMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1, 12);
+
+  while (cursor <= finalMonth) {
+    months.push(new Date(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return months;
+}
+
+function renderCalendars() {
+  const sessionLookup = new Map(
+    currentDates.map((date, index) => [dateKey(date), index + 1]),
+  );
+  const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  calendarMonths.replaceChildren();
+
+  getMonthsBetween(currentDates[0], currentDates.at(-1)).forEach((monthDate) => {
+    const month = document.createElement("article");
+    month.className = "calendar-month";
+
+    const title = document.createElement("h3");
+    title.textContent = new Intl.DateTimeFormat("en-AU", {
+      month: "long",
+      year: "numeric",
+    }).format(monthDate);
+    month.append(title);
+
+    const grid = document.createElement("div");
+    grid.className = "calendar-grid";
+    grid.setAttribute("role", "grid");
+    grid.setAttribute("aria-label", title.textContent);
+
+    weekdayLabels.forEach((label) => {
+      const weekday = document.createElement("span");
+      weekday.className = "calendar-weekday";
+      weekday.textContent = label;
+      weekday.setAttribute("aria-hidden", "true");
+      grid.append(weekday);
+    });
+
+    const year = monthDate.getFullYear();
+    const monthIndex = monthDate.getMonth();
+    const firstWeekday = new Date(year, monthIndex, 1, 12).getDay();
+    const daysInMonth = new Date(year, monthIndex + 1, 0, 12).getDate();
+
+    for (let blank = 0; blank < firstWeekday; blank += 1) {
+      const spacer = document.createElement("span");
+      spacer.className = "calendar-day is-empty";
+      spacer.setAttribute("aria-hidden", "true");
+      grid.append(spacer);
+    }
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const date = new Date(year, monthIndex, day, 12);
+      const sessionNumber = sessionLookup.get(dateKey(date));
+      const cell = document.createElement("span");
+      cell.className = "calendar-day";
+      if (date.getDay() === 0) cell.classList.add("is-sunday");
+      cell.innerHTML = `<span>${day}</span>`;
+
+      if (sessionNumber) {
+        cell.classList.add("is-session");
+        cell.innerHTML += `<b>S${sessionNumber}</b>`;
+        cell.setAttribute("aria-label", `${formatLong(date)}, Session ${sessionNumber}`);
+      } else {
+        cell.setAttribute("aria-label", formatLong(date));
+      }
+
+      grid.append(cell);
+    }
+
+    month.append(grid);
+    calendarMonths.append(month);
+  });
+
+  calendarSection.hidden = false;
+}
+
 function renderSchedule(startDate) {
   currentDates = SESSION_WEEK_OFFSETS.map((weeks) => addWeeks(startDate, weeks));
   scheduleList.replaceChildren();
@@ -66,6 +154,7 @@ function renderSchedule(startDate) {
   scheduleList.hidden = false;
   scheduleSummary.hidden = false;
   scheduleActions.hidden = false;
+  renderCalendars();
 }
 
 form.addEventListener("submit", (event) => {
