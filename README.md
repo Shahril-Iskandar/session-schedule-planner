@@ -1,6 +1,6 @@
 # Session Schedule Planner
 
-A small, dependency-free web app that calculates six session dates from one starting date.
+A small, dependency-free web app that calculates the full Hip Osteoarthritis Gait Intervention Program schedule from one starting date.
 
 The schedule follows the supplied session pattern:
 
@@ -10,6 +10,8 @@ The schedule follows the supplied session pattern:
 - Session 4: 6 weeks after the start
 - Session 5: 9 weeks after the start
 - Session 6: 11 weeks after the start
+- Session 7: nearest matching weekday to 3 calendar months after Session 6
+- Session 8: nearest matching weekday to 1 calendar year after Session 1
 
 ## Run locally
 
@@ -25,8 +27,8 @@ Then visit <http://localhost:8000>.
 
 ## Features
 
-- Uses one date to calculate all six sessions
-- Preserves the weekday for every session
+- Uses one date to calculate all eight sessions
+- Preserves the same weekday for all intervention and follow-up sessions
 - Displays session dates in month-by-month calendars
 - Copies the full schedule to the clipboard
 - Downloads all sessions as an `.ics` calendar file

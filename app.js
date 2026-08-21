@@ -1,4 +1,5 @@
 const SESSION_WEEK_OFFSETS = [0, 1, 3, 6, 9, 11];
+const CORE_SESSION_COUNT = SESSION_WEEK_OFFSETS.length;
 
 const form = document.querySelector("#schedule-form");
 const dateInput = document.querySelector("#start-date");
@@ -13,6 +14,7 @@ const calendarSection = document.querySelector("#calendar-section");
 const calendarMonths = document.querySelector("#calendar-months");
 
 let currentDates = [];
+let currentSessions = [];
 
 function parseLocalDate(value) {
   const [year, month, day] = value.split("-").map(Number);
@@ -25,6 +27,48 @@ function addWeeks(date, weeks) {
   const result = new Date(date);
   result.setDate(result.getDate() + weeks * 7);
   return result;
+}
+
+function addMonthsClamped(date, months) {
+  const result = new Date(date);
+  const originalDay = result.getDate();
+  result.setDate(1);
+  result.setMonth(result.getMonth() + months);
+  const lastDay = new Date(result.getFullYear(), result.getMonth() + 1, 0, 12).getDate();
+  result.setDate(Math.min(originalDay, lastDay));
+  return result;
+}
+
+function alignToWeekday(date, weekday) {
+  const result = new Date(date);
+  const difference = ((weekday - result.getDay() + 3) % 7) - 3;
+  result.setDate(result.getDate() + difference);
+  return result;
+}
+
+function buildSessions(startDate) {
+  const coreSessions = SESSION_WEEK_OFFSETS.map((weeks, index) => ({
+    date: addWeeks(startDate, weeks),
+    name: `Session ${index + 1}`,
+    timing: weeks === 0 ? "Start" : `Week +${weeks}`,
+    type: "core",
+  }));
+
+  return [
+    ...coreSessions,
+    {
+      date: alignToWeekday(addMonthsClamped(coreSessions.at(-1).date, 3), startDate.getDay()),
+      name: "3-month follow-up",
+      timing: "3 months after S6",
+      type: "follow-up",
+    },
+    {
+      date: alignToWeekday(addMonthsClamped(startDate, 12), startDate.getDay()),
+      name: "1-year follow-up",
+      timing: "1 year after S1",
+      type: "follow-up",
+    },
+  ];
 }
 
 function formatLong(date) {
@@ -68,7 +112,15 @@ function renderCalendars() {
   const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   calendarMonths.replaceChildren();
 
-  getMonthsBetween(currentDates[0], currentDates.at(-1)).forEach((monthDate) => {
+  const sessionMonths = getMonthsBetween(currentDates[0], currentDates[CORE_SESSION_COUNT - 1]);
+  currentDates.slice(CORE_SESSION_COUNT).forEach((date) => {
+    const alreadyIncluded = sessionMonths.some(
+      (month) => month.getFullYear() === date.getFullYear() && month.getMonth() === date.getMonth(),
+    );
+    if (!alreadyIncluded) sessionMonths.push(new Date(date.getFullYear(), date.getMonth(), 1, 12));
+  });
+
+  sessionMonths.forEach((monthDate) => {
     const month = document.createElement("article");
     month.className = "calendar-month";
 
@@ -114,6 +166,7 @@ function renderCalendars() {
 
       if (sessionNumber) {
         cell.classList.add("is-session");
+        if (sessionNumber > CORE_SESSION_COUNT) cell.classList.add("is-follow-up");
         cell.innerHTML += `<b>S${sessionNumber}</b>`;
         cell.setAttribute("aria-label", `${formatLong(date)}, Session ${sessionNumber}`);
       } else {
@@ -131,25 +184,26 @@ function renderCalendars() {
 }
 
 function renderSchedule(startDate) {
-  currentDates = SESSION_WEEK_OFFSETS.map((weeks) => addWeeks(startDate, weeks));
+  currentSessions = buildSessions(startDate);
+  currentDates = currentSessions.map((session) => session.date);
   scheduleList.replaceChildren();
 
-  currentDates.forEach((date, index) => {
+  currentSessions.forEach((session, index) => {
+    const { date } = session;
     const item = document.createElement("li");
-    item.className = "session";
+    item.className = `session${session.type === "follow-up" ? " is-follow-up" : ""}`;
     item.innerHTML = `
       <span class="session-number">S${index + 1}</span>
       <div class="session-date">
         <strong>${formatLong(date)}</strong>
-        <span>${formatShort(date)}</span>
+        <span>${session.name} · ${formatShort(date)}</span>
       </div>
-      <span class="week-label">${SESSION_WEEK_OFFSETS[index] === 0 ? "Start" : `Week +${SESSION_WEEK_OFFSETS[index]}`}</span>
+      <span class="week-label">${session.timing}</span>
     `;
     scheduleList.append(item);
   });
 
-  const days = Math.round((currentDates.at(-1) - currentDates[0]) / 86400000);
-  scheduleSummary.textContent = `${days} days from the first session to the final session · all sessions fall on a ${new Intl.DateTimeFormat("en-AU", { weekday: "long" }).format(startDate)}.`;
+  scheduleSummary.textContent = `Eight appointments in total. Every intervention and follow-up session falls on a ${new Intl.DateTimeFormat("en-AU", { weekday: "long" }).format(startDate)}.`;
   emptyState.hidden = true;
   scheduleList.hidden = false;
   scheduleSummary.hidden = false;
@@ -167,7 +221,7 @@ form.addEventListener("submit", (event) => {
 
 copyButton.addEventListener("click", async () => {
   const text = currentDates
-    .map((date, index) => `Session ${index + 1}: ${formatLong(date)}`)
+    .map((date, index) => `${currentSessions[index].name}: ${formatLong(date)}`)
     .join("\n");
   try {
     await navigator.clipboard.writeText(text);
@@ -195,8 +249,8 @@ calendarButton.addEventListener("click", () => {
       `UID:session-${index + 1}-${toCalendarDate(date)}@schedule-planner`,
       `DTSTART;VALUE=DATE:${toCalendarDate(date)}`,
       `DTEND;VALUE=DATE:${toCalendarDate(nextDay)}`,
-      `SUMMARY:Study Session ${index + 1}`,
-      "DESCRIPTION:Scheduled with Session Schedule Planner",
+      `SUMMARY:${currentSessions[index].name} — Hip Osteoarthritis Gait Intervention Program`,
+      "DESCRIPTION:Scheduled with the Lab Session Planner",
       "END:VEVENT",
     ].join("\r\n");
   });
