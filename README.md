@@ -13,6 +13,8 @@ The schedule follows the supplied session pattern:
 - Session 7: nearest matching weekday to 3 calendar months after Session 6
 - Session 8: nearest matching weekday to 1 calendar year after Session 1
 
+Estimated appointment durations are about 1 hour for Sessions 1–5 and about 2 hours for Sessions 6–8.
+
 ## Run locally
 
 Open `index.html` in a browser. No installation or build step is needed.
@@ -30,6 +32,7 @@ Then visit <http://localhost:8000>.
 - Uses one date to calculate all eight sessions
 - Preserves the same weekday for all intervention and follow-up sessions
 - Displays session dates in month-by-month calendars
+- Shows the estimated duration for every session
 - Copies the full schedule to the clipboard
 - Downloads all sessions as an `.ics` calendar file
 - Responsive and printable layout

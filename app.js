@@ -51,6 +51,7 @@ function buildSessions(startDate) {
     date: addWeeks(startDate, weeks),
     name: `Session ${index + 1}`,
     timing: weeks === 0 ? "Start" : `Week +${weeks}`,
+    duration: index < 5 ? "About 1 hour" : "About 2 hours",
     type: "core",
   }));
 
@@ -60,12 +61,14 @@ function buildSessions(startDate) {
       date: alignToWeekday(addMonthsClamped(coreSessions.at(-1).date, 3), startDate.getDay()),
       name: "3-month follow-up",
       timing: "3 months after S6",
+      duration: "About 2 hours",
       type: "follow-up",
     },
     {
       date: alignToWeekday(addMonthsClamped(startDate, 12), startDate.getDay()),
       name: "1-year follow-up",
       timing: "1 year after S1",
+      duration: "About 2 hours",
       type: "follow-up",
     },
   ];
@@ -197,6 +200,7 @@ function renderSchedule(startDate) {
       <div class="session-date">
         <strong>${formatLong(date)}</strong>
         <span>${session.name} · ${formatShort(date)}</span>
+        <span class="session-duration">Estimated duration: ${session.duration}</span>
       </div>
       <span class="week-label">${session.timing}</span>
     `;
@@ -221,7 +225,7 @@ form.addEventListener("submit", (event) => {
 
 copyButton.addEventListener("click", async () => {
   const text = currentDates
-    .map((date, index) => `${currentSessions[index].name}: ${formatLong(date)}`)
+    .map((date, index) => `${currentSessions[index].name}: ${formatLong(date)} (${currentSessions[index].duration})`)
     .join("\n");
   try {
     await navigator.clipboard.writeText(text);
@@ -250,7 +254,7 @@ calendarButton.addEventListener("click", () => {
       `DTSTART;VALUE=DATE:${toCalendarDate(date)}`,
       `DTEND;VALUE=DATE:${toCalendarDate(nextDay)}`,
       `SUMMARY:${currentSessions[index].name} — Hip Osteoarthritis Gait Intervention Program`,
-      "DESCRIPTION:Scheduled with the Lab Session Planner",
+      `DESCRIPTION:Estimated duration: ${currentSessions[index].duration}`,
       "END:VEVENT",
     ].join("\r\n");
   });
