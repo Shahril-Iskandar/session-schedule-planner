@@ -1,6 +1,7 @@
 const SESSION_WEEK_OFFSETS = [0, 1, 3, 6, 9, 11];
 const CORE_SESSION_COUNT = SESSION_WEEK_OFFSETS.length;
 const FIRST_SESSION_NUMBER = 2;
+const ATTENDEE_EMAIL = "s5424179@griffithuni.edu.au";
 
 const form = document.querySelector("#schedule-form");
 const dateInput = document.querySelector("#start-date");
@@ -13,6 +14,12 @@ const copyButton = document.querySelector("#copy-button");
 const calendarButton = document.querySelector("#calendar-button");
 const calendarSection = document.querySelector("#calendar-section");
 const calendarMonths = document.querySelector("#calendar-months");
+const calendarDialog = document.querySelector("#calendar-dialog");
+const calendarForm = document.querySelector("#calendar-form");
+const calendarDialogClose = document.querySelector("#calendar-dialog-close");
+const calendarCancel = document.querySelector("#calendar-cancel");
+const subjectIdInput = document.querySelector("#subject-id");
+const appointmentTimeInput = document.querySelector("#appointment-time");
 
 let currentDates = [];
 let currentSessions = [];
@@ -244,29 +251,71 @@ copyButton.addEventListener("click", async () => {
   }
 });
 
-function toCalendarDate(date) {
-  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
+function toCalendarDateTime(date) {
+  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}T${String(date.getHours()).padStart(2, "0")}${String(date.getMinutes()).padStart(2, "0")}00`;
 }
 
 calendarButton.addEventListener("click", () => {
-  const events = currentDates.map((date, index) => {
-    const nextDay = new Date(date);
-    nextDay.setDate(nextDay.getDate() + 1);
+  calendarDialog.showModal();
+  subjectIdInput.focus();
+});
+
+calendarDialogClose.addEventListener("click", () => calendarDialog.close());
+calendarCancel.addEventListener("click", () => calendarDialog.close());
+
+calendarDialog.addEventListener("click", (event) => {
+  if (event.target === calendarDialog) calendarDialog.close();
+});
+
+function escapeCalendarText(value) {
+  return value.replace(/\\/g, "\\\\").replace(/\r?\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+}
+
+calendarForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!calendarForm.reportValidity()) return;
+
+  const subjectId = subjectIdInput.value.trim();
+  const [hours, minutes] = appointmentTimeInput.value.split(":").map(Number);
+  const createdAt = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+
+  const events = currentSessions.map((session) => {
+    const appointmentStart = new Date(session.date);
+    appointmentStart.setHours(hours, minutes, 0, 0);
+    const bookingStart = new Date(appointmentStart.getTime() - 60 * 60 * 1000);
+    const bookingMinutes = session.number <= 6 ? 210 : 240;
+    const bookingEnd = new Date(bookingStart.getTime() + bookingMinutes * 60 * 1000);
+    const summary = `HipOA Gait Intervention (Mocap, EMG, Treadmill) - ${subjectId} (S${session.number})`;
+    const description = `Booked by ${ATTENDEE_EMAIL}. Appointment starts at ${appointmentTimeInput.value}. Includes one hour of lab setup.`;
+
     return [
       "BEGIN:VEVENT",
-      `UID:session-${currentSessions[index].number}-${toCalendarDate(date)}@schedule-planner`,
-      `DTSTART;VALUE=DATE:${toCalendarDate(date)}`,
-      `DTEND;VALUE=DATE:${toCalendarDate(nextDay)}`,
-      `SUMMARY:${currentSessions[index].name} — Hip Osteoarthritis Gait Intervention Program`,
-      `DESCRIPTION:Estimated duration: ${currentSessions[index].duration}`,
+      `UID:hipoa-${escapeCalendarText(subjectId)}-s${session.number}-${dateKey(session.date)}@schedule-planner`,
+      `DTSTAMP:${createdAt}`,
+      `DTSTART;TZID=Australia/Brisbane:${toCalendarDateTime(bookingStart)}`,
+      `DTEND;TZID=Australia/Brisbane:${toCalendarDateTime(bookingEnd)}`,
+      `SUMMARY:${escapeCalendarText(summary)}`,
+      `DESCRIPTION:${escapeCalendarText(description)}`,
+      `ATTENDEE;CN=${ATTENDEE_EMAIL};ROLE=REQ-PARTICIPANT;RSVP=FALSE:mailto:${ATTENDEE_EMAIL}`,
+      "TRANSP:OPAQUE",
       "END:VEVENT",
     ].join("\r\n");
   });
 
-  const calendar = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Session Schedule Planner//EN", ...events, "END:VCALENDAR"].join("\r\n");
+  const calendar = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Session Schedule Planner//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "X-WR-TIMEZONE:Australia/Brisbane",
+    ...events,
+    "END:VCALENDAR",
+  ].join("\r\n");
   const link = document.createElement("a");
   link.href = URL.createObjectURL(new Blob([calendar], { type: "text/calendar;charset=utf-8" }));
-  link.download = "session-schedule.ics";
+  link.download = `hipoa-${subjectId.replace(/[^a-z0-9_-]+/gi, "-")}-schedule.ics`;
   link.click();
   URL.revokeObjectURL(link.href);
+  calendarDialog.close();
 });

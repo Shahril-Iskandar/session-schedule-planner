@@ -8,8 +8,8 @@
       content="Plan all lab and follow-up sessions for the Hip Osteoarthritis Gait Intervention Program."
     />
     <title>Session Schedule Planner</title>
-    <link rel="stylesheet" href="styles.css?v=3" />
-    <script src="app.js?v=3" defer></script>
+    <link rel="stylesheet" href="styles.css?v=4" />
+    <script src="app.js?v=4" defer></script>
   </head>
   <body>
     <main class="page-shell">
@@ -90,6 +90,31 @@
         <span>Griffith University | Australian Centre for Precision Health and Technology </span>
         <span>Six intervention sessions · 3-month follow-up · 1-year follow-up</span>
       </footer>
+
+      <dialog id="calendar-dialog" aria-labelledby="calendar-dialog-title">
+        <form id="calendar-form">
+          <div class="dialog-heading">
+            <div>
+              <p class="section-number">Calendar booking</p>
+              <h2 id="calendar-dialog-title">Add booking details</h2>
+            </div>
+            <button class="dialog-close" id="calendar-dialog-close" type="button" aria-label="Close">×</button>
+          </div>
+          <p class="dialog-helper">Bookings begin one hour before the appointment for lab setup.</p>
+          <div class="dialog-fields">
+            <label for="subject-id">Subject ID</label>
+            <input id="subject-id" name="subject-id" type="text" autocomplete="off" required />
+            <label for="appointment-time">Appointment start time</label>
+            <input id="appointment-time" name="appointment-time" type="time" required />
+          </div>
+          <p class="booking-note">S2–S6: 3.5-hour booking · S7–S9: 4-hour booking</p>
+          <p class="attendee-note">Attendee: s5424179@griffithuni.edu.au</p>
+          <div class="dialog-actions">
+            <button class="secondary" id="calendar-cancel" type="button">Cancel</button>
+            <button class="primary" type="submit">Download calendar</button>
+          </div>
+        </form>
+      </dialog>
     </main>
   </body>
 </html>
