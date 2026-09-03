@@ -37,5 +37,6 @@ Then visit <http://localhost:8000>.
 - Downloads all sessions as an `.ics` calendar file
 - Builds timed lab bookings from a subject ID and appointment start time
 - Starts each calendar booking one hour early for lab setup
+- Books 2.5 hours for Sessions 2–6 and 3 hours for Sessions 7–9
 - Adds `s5424179@griffithuni.edu.au` as the attendee
 - Responsive and printable layout

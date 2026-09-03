@@ -283,10 +283,9 @@ calendarForm.addEventListener("submit", (event) => {
     const appointmentStart = new Date(session.date);
     appointmentStart.setHours(hours, minutes, 0, 0);
     const bookingStart = new Date(appointmentStart.getTime() - 60 * 60 * 1000);
-    const bookingMinutes = session.number <= 6 ? 210 : 240;
+    const bookingMinutes = session.number <= 6 ? 150 : 180;
     const bookingEnd = new Date(bookingStart.getTime() + bookingMinutes * 60 * 1000);
     const summary = `HipOA Gait Intervention (Mocap, EMG, Treadmill) - ${subjectId} (S${session.number})`;
-    const description = `Booked by ${ATTENDEE_EMAIL}. Appointment starts at ${appointmentTimeInput.value}. Includes one hour of lab setup.`;
 
     return [
       "BEGIN:VEVENT",
@@ -295,7 +294,6 @@ calendarForm.addEventListener("submit", (event) => {
       `DTSTART;TZID=Australia/Brisbane:${toCalendarDateTime(bookingStart)}`,
       `DTEND;TZID=Australia/Brisbane:${toCalendarDateTime(bookingEnd)}`,
       `SUMMARY:${escapeCalendarText(summary)}`,
-      `DESCRIPTION:${escapeCalendarText(description)}`,
       `ATTENDEE;CN=${ATTENDEE_EMAIL};ROLE=REQ-PARTICIPANT;RSVP=FALSE:mailto:${ATTENDEE_EMAIL}`,
       "TRANSP:OPAQUE",
       "END:VEVENT",
