@@ -4,16 +4,16 @@ A small, dependency-free web app that calculates the full Hip Osteoarthritis Gai
 
 The schedule follows the supplied session pattern:
 
-- Session 1: starting date
-- Session 2: 1 week later
-- Session 3: 3 weeks after the start
-- Session 4: 6 weeks after the start
-- Session 5: 9 weeks after the start
-- Session 6: 11 weeks after the start
-- Session 7: nearest matching weekday to 3 calendar months after Session 6
-- Session 8: nearest matching weekday to 1 calendar year after Session 1
+- Session 2: starting date
+- Session 3: 1 week later
+- Session 4: 3 weeks after the start
+- Session 5: 6 weeks after the start
+- Session 6: 9 weeks after the start
+- Session 7: 11 weeks after the start
+- Session 8: nearest matching weekday to 3 calendar months after Session 7
+- Session 9: nearest matching weekday to 1 calendar year after Session 2
 
-Estimated appointment durations are about 1 hour for Sessions 1–5 and about 2 hours for Sessions 6–8.
+Estimated appointment durations are about 1 hour for Sessions 2–6 and about 2 hours for Sessions 7–9.
 
 ## Run locally
 

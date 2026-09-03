@@ -1,5 +1,6 @@
 const SESSION_WEEK_OFFSETS = [0, 1, 3, 6, 9, 11];
 const CORE_SESSION_COUNT = SESSION_WEEK_OFFSETS.length;
+const FIRST_SESSION_NUMBER = 2;
 
 const form = document.querySelector("#schedule-form");
 const dateInput = document.querySelector("#start-date");
@@ -49,7 +50,8 @@ function alignToWeekday(date, weekday) {
 function buildSessions(startDate) {
   const coreSessions = SESSION_WEEK_OFFSETS.map((weeks, index) => ({
     date: addWeeks(startDate, weeks),
-    name: `Session ${index + 1}`,
+    number: FIRST_SESSION_NUMBER + index,
+    name: `Session ${FIRST_SESSION_NUMBER + index}`,
     timing: weeks === 0 ? "Start" : `Week +${weeks}`,
     duration: index < 5 ? "About 1 hour" : "About 2 hours",
     type: "core",
@@ -59,15 +61,17 @@ function buildSessions(startDate) {
     ...coreSessions,
     {
       date: alignToWeekday(addMonthsClamped(coreSessions.at(-1).date, 3), startDate.getDay()),
+      number: FIRST_SESSION_NUMBER + CORE_SESSION_COUNT,
       name: "3-month follow-up",
-      timing: "3 months after S6",
+      timing: "3 months after S7",
       duration: "About 2 hours",
       type: "follow-up",
     },
     {
       date: alignToWeekday(addMonthsClamped(startDate, 12), startDate.getDay()),
+      number: FIRST_SESSION_NUMBER + CORE_SESSION_COUNT + 1,
       name: "1-year follow-up",
-      timing: "1 year after S1",
+      timing: "1 year after S2",
       duration: "About 2 hours",
       type: "follow-up",
     },
@@ -110,7 +114,7 @@ function getMonthsBetween(startDate, endDate) {
 
 function renderCalendars() {
   const sessionLookup = new Map(
-    currentDates.map((date, index) => [dateKey(date), index + 1]),
+    currentSessions.map((session) => [dateKey(session.date), session]),
   );
   const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   calendarMonths.replaceChildren();
@@ -161,17 +165,17 @@ function renderCalendars() {
 
     for (let day = 1; day <= daysInMonth; day += 1) {
       const date = new Date(year, monthIndex, day, 12);
-      const sessionNumber = sessionLookup.get(dateKey(date));
+      const session = sessionLookup.get(dateKey(date));
       const cell = document.createElement("span");
       cell.className = "calendar-day";
       if (date.getDay() === 0) cell.classList.add("is-sunday");
       cell.innerHTML = `<span>${day}</span>`;
 
-      if (sessionNumber) {
+      if (session) {
         cell.classList.add("is-session");
-        if (sessionNumber > CORE_SESSION_COUNT) cell.classList.add("is-follow-up");
-        cell.innerHTML += `<b>S${sessionNumber}</b>`;
-        cell.setAttribute("aria-label", `${formatLong(date)}, Session ${sessionNumber}`);
+        if (session.type === "follow-up") cell.classList.add("is-follow-up");
+        cell.innerHTML += `<b>S${session.number}</b>`;
+        cell.setAttribute("aria-label", `${formatLong(date)}, Session ${session.number}`);
       } else {
         cell.setAttribute("aria-label", formatLong(date));
       }
@@ -196,7 +200,7 @@ function renderSchedule(startDate) {
     const item = document.createElement("li");
     item.className = `session${session.type === "follow-up" ? " is-follow-up" : ""}`;
     item.innerHTML = `
-      <span class="session-number">S${index + 1}</span>
+      <span class="session-number">S${session.number}</span>
       <div class="session-date">
         <strong>${formatLong(date)}</strong>
         <span>${session.name} · ${formatShort(date)}</span>
@@ -250,7 +254,7 @@ calendarButton.addEventListener("click", () => {
     nextDay.setDate(nextDay.getDate() + 1);
     return [
       "BEGIN:VEVENT",
-      `UID:session-${index + 1}-${toCalendarDate(date)}@schedule-planner`,
+      `UID:session-${currentSessions[index].number}-${toCalendarDate(date)}@schedule-planner`,
       `DTSTART;VALUE=DATE:${toCalendarDate(date)}`,
       `DTEND;VALUE=DATE:${toCalendarDate(nextDay)}`,
       `SUMMARY:${currentSessions[index].name} — Hip Osteoarthritis Gait Intervention Program`,
