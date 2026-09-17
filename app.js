@@ -249,6 +249,11 @@ function renderAvailabilityWarning() {
     list.append(item);
   });
   availabilityWarning.append(list);
+
+  const note = document.createElement("p");
+  note.className = "availability-note";
+  note.textContent = "If you would like to book outside these hours, please let Shahril know.";
+  availabilityWarning.append(note);
 }
 
 function getMonthsBetween(startDate, endDate) {
