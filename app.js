@@ -2,6 +2,7 @@ const SESSION_WEEK_OFFSETS = [0, 1, 3, 6, 9, 11];
 const CORE_SESSION_COUNT = SESSION_WEEK_OFFSETS.length;
 const FIRST_SESSION_NUMBER = 2;
 const ATTENDEE_EMAIL = "s5424179@griffithuni.edu.au";
+const SUPABASE_FUNCTION_URL = "https://rqyogwdvaaxtovysorbm.supabase.co/functions/v1/check-availability";
 
 const form = document.querySelector("#schedule-form");
 const dateInput = document.querySelector("#start-date");
@@ -20,9 +21,12 @@ const calendarDialogClose = document.querySelector("#calendar-dialog-close");
 const calendarCancel = document.querySelector("#calendar-cancel");
 const subjectIdInput = document.querySelector("#subject-id");
 const appointmentTimeInput = document.querySelector("#appointment-time");
+const labStatus = document.querySelector("#lab-status");
+const availabilityWarning = document.querySelector("#availability-warning");
 
 let currentDates = [];
 let currentSessions = [];
+let labBookings = [];
 
 function parseLocalDate(value) {
   const [year, month, day] = value.split("-").map(Number);
@@ -104,6 +108,147 @@ function formatShort(date) {
 
 function dateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function parseCalendarDate(value) {
+  const match = value.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2}))?/);
+  if (!match) return null;
+  return new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    Number(match[4] || 0),
+    Number(match[5] || 0),
+    Number(match[6] || 0),
+    0,
+  );
+}
+
+function formatBookingTime(date) {
+  if (!date) return "All day";
+  if (typeof date === "string") {
+    const [hours, minutes] = date.split(":").map(Number);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return "All day";
+    return new Intl.DateTimeFormat("en-AU", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(new Date(2000, 0, 1, hours, minutes));
+  }
+  if (date.getHours() === 0 && date.getMinutes() === 0 && date.getSeconds() === 0) {
+    return "All day";
+  }
+  return new Intl.DateTimeFormat("en-AU", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(date);
+}
+
+function parseLabCalendar(text) {
+  const lines = text.replace(/\r?\n[ \t]/g, "").split(/\r?\n/);
+  const bookings = [];
+  let event = null;
+
+  lines.forEach((line) => {
+    if (line === "BEGIN:VEVENT") {
+      event = {};
+      return;
+    }
+    if (line === "END:VEVENT") {
+      if (event?.start) {
+        const end = event.end || new Date(event.start.getTime() + 24 * 60 * 60 * 1000);
+        const dates = [];
+        for (const cursor = new Date(event.start); cursor < end; cursor.setDate(cursor.getDate() + 1)) {
+          dates.push(dateKey(cursor));
+        }
+        bookings.push({ dates, summary: event.summary || "Lab booking" });
+        bookings[bookings.length - 1].start = event.start;
+        bookings[bookings.length - 1].end = event.end;
+      }
+      event = null;
+      return;
+    }
+    if (!event) return;
+
+    const separator = line.indexOf(":");
+    if (separator === -1) return;
+    const property = line.slice(0, separator).split(";", 1)[0];
+    const value = line.slice(separator + 1);
+    if (property.startsWith("DTSTART")) event.start = parseCalendarDate(value);
+    if (property.startsWith("DTEND")) event.end = parseCalendarDate(value);
+    if (property === "SUMMARY") event.summary = value.replace(/\\([,;\\])/g, "$1");
+  });
+
+  return bookings;
+}
+
+function renderLabStatus() {
+  labStatus.textContent = `${labBookings.length} lab booking${labBookings.length === 1 ? "" : "s"} checked from the lab calendar.`;
+}
+
+async function loadLabCalendar() {
+  labStatus.textContent = "Checking lab availability...";
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(SUPABASE_FUNCTION_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dates: currentSessions.map((session) => dateKey(session.date)),
+      }),
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`Calendar request failed: ${response.status}`);
+    const result = await response.json();
+    labBookings = (result.conflicts || []).map((booking) => ({
+      dates: booking.dates || (booking.start?.date ? [booking.start.date] : []),
+      summary: booking.summary || "Lab booking",
+      startTime: booking.startTime || booking.start?.time || null,
+      endTime: booking.endTime || booking.end?.time || null,
+    }));
+    renderLabStatus();
+    return true;
+  } catch (error) {
+    labBookings = [];
+    labStatus.textContent = "Lab availability could not be checked; schedule generated without the conflict check.";
+    console.error("Unable to load the lab calendar.", error);
+    return false;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+function renderAvailabilityWarning() {
+  if (!currentSessions.length || !labBookings.length) {
+    availabilityWarning.hidden = true;
+    availabilityWarning.replaceChildren();
+    return;
+  }
+
+  const conflicts = currentSessions.flatMap((session) => {
+    const date = dateKey(session.date);
+    return labBookings
+      .filter((booking) => booking.dates.includes(date))
+      .map((booking) => ({ session, booking }));
+  });
+
+  availabilityWarning.hidden = conflicts.length === 0;
+  availabilityWarning.replaceChildren();
+  if (!conflicts.length) return;
+
+  const heading = document.createElement("strong");
+  heading.textContent = `${conflicts.length} schedule date${conflicts.length === 1 ? "" : "s"} conflict${conflicts.length === 1 ? "s" : ""} with your lab calendar`;
+  availabilityWarning.append(heading);
+
+  const list = document.createElement("ul");
+  conflicts.forEach(({ session, booking }) => {
+    const item = document.createElement("li");
+    item.textContent = `S${session.number} on ${formatLong(session.date)} may conflict with an existing lab booking (${formatBookingTime(booking.startTime || booking.start)}${booking.endTime || booking.end ? `–${formatBookingTime(booking.endTime || booking.end)}` : ""}).`;
+    list.append(item);
+  });
+  availabilityWarning.append(list);
 }
 
 function getMonthsBetween(startDate, endDate) {
@@ -224,14 +369,20 @@ function renderSchedule(startDate) {
   scheduleSummary.hidden = false;
   scheduleActions.hidden = false;
   renderCalendars();
+  renderAvailabilityWarning();
 }
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const startDate = parseLocalDate(dateInput.value);
   dateError.hidden = Boolean(startDate);
   if (!startDate) return;
+  const submitButton = form.querySelector("button[type='submit']");
+  submitButton.disabled = true;
   renderSchedule(startDate);
+  await loadLabCalendar();
+  renderAvailabilityWarning();
+  submitButton.disabled = false;
 });
 
 copyButton.addEventListener("click", async () => {

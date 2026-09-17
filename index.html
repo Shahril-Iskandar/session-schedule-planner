@@ -9,7 +9,7 @@
     />
     <title>Session Schedule Planner</title>
     <link rel="stylesheet" href="styles.css?v=5" />
-    <script src="app.js?v=5" defer></script>
+    <script src="app.js?v=8" defer></script>
   </head>
   <body>
     <main class="page-shell">
@@ -40,6 +40,11 @@
             <p class="error" id="date-error" role="alert" hidden>Please choose a valid date.</p>
           </form>
 
+          <div class="lab-availability">
+            <h3>Check lab availability</h3>
+            <p class="lab-status" id="lab-status" role="status">Lab availability is checked automatically when you build a schedule.</p>
+          </div>
+
           <!-- <div class="pattern" aria-label="Session spacing pattern">
             <span>Spacing pattern</span>
             <div class="pattern-track" aria-hidden="true">
@@ -68,6 +73,7 @@
 
           <ol id="schedule-list" class="schedule-list" hidden></ol>
           <p id="schedule-summary" class="schedule-summary" hidden></p>
+          <div id="availability-warning" class="availability-warning" role="alert" hidden></div>
         </div>
       </section>
 

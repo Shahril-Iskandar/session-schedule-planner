@@ -57,6 +57,10 @@ input[type="date"]:focus { box-shadow: 0 0 0 3px #ff9c7f; }
 .date-row button:hover { background: #cd4228; }
 .date-row button span { margin-left: 10px; }
 .error { margin: 10px 0 0; color: #ffb19a; }
+.lab-availability { padding-top: 24px; border-top: 1px solid rgba(255,255,255,.18); }
+.lab-availability h3 { margin: 0 0 8px; font-size: 1rem; }
+.lab-availability p { margin: 0 0 14px; color: #b9cbc6; font-size: .85rem; line-height: 1.5; }
+.lab-status { margin-top: 12px !important; margin-bottom: 0 !important; }
 
 .pattern { padding-top: 28px; border-top: 1px solid rgba(255,255,255,.18); }
 .pattern > span { font-size: .85rem; font-weight: 700; }
@@ -89,6 +93,9 @@ input[type="date"]:focus { box-shadow: 0 0 0 3px #ff9c7f; }
 .session-date .session-duration { display: block; margin-top: 5px; color: var(--green); font-weight: 750; }
 .week-label { padding: 5px 8px; border: 1px solid var(--line); border-radius: 20px; white-space: nowrap; }
 .schedule-summary { margin: 20px 0 0; color: var(--muted); font-size: .85rem; }
+.availability-warning { margin-top: 18px; padding: 14px 16px; border: 1px solid #e5a08e; border-radius: 10px; background: #fff0eb; color: #8c2f1e; font-size: .85rem; line-height: 1.5; }
+.availability-warning strong { display: block; }
+.availability-warning ul { margin: 8px 0 0; padding-left: 18px; }
 
 .calendar-section { margin-top: 24px; padding: clamp(28px, 4vw, 52px); border: 1px solid var(--line); border-radius: 24px; background: var(--card); box-shadow: 0 24px 70px rgba(31, 45, 41, 0.07); }
 .calendar-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 30px; }

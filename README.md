@@ -39,4 +39,13 @@ Then visit <http://localhost:8000>.
 - Starts each calendar booking one hour early for lab setup
 - Books 2.5 hours for Sessions 2–6 and 3 hours for Sessions 7–9
 - Adds `s5424179@griffithuni.edu.au` as the attendee
+- Automatically checks the bundled `Movement LabCalendar.ics` file when a schedule is built
+- Warns on booked dates and includes booking times
 - Responsive and printable layout
+
+## Check lab availability
+
+Replace `Movement LabCalendar.ics` with the current lab calendar on the server. After
+choosing a first date, click **Build schedule** to check all eight generated session
+dates and list any conflicts with their booking times. The calendar is loaded only
+when the schedule is built and is not exposed as an upload control to participants.
