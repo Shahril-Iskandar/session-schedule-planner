@@ -203,7 +203,7 @@ async function loadLabCalendar() {
     if (!response.ok) throw new Error(`Calendar request failed: ${response.status}`);
     const result = await response.json();
     labBookings = (result.conflicts || []).map((booking) => ({
-      dates: booking.dates || (booking.start?.date ? [booking.start.date] : []),
+      dates: booking.dates || [booking.startDate, booking.endDate].filter(Boolean),
       summary: booking.summary || "Lab booking",
       startTime: booking.startTime || booking.start?.time || null,
       endTime: booking.endTime || booking.end?.time || null,
