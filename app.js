@@ -184,7 +184,7 @@ function parseLabCalendar(text) {
 }
 
 function renderLabStatus() {
-  labStatus.textContent = `${labBookings.length} lab booking${labBookings.length === 1 ? "" : "s"} checked from the lab calendar.`;
+  labStatus.textContent = `${labBookings.length} date${labBookings.length === 1 ? "" : "s"} in conflict with existing lab booking${labBookings.length === 1 ? "" : "s"}.`;
 }
 
 async function loadLabCalendar() {
@@ -239,13 +239,13 @@ function renderAvailabilityWarning() {
   if (!conflicts.length) return;
 
   const heading = document.createElement("strong");
-  heading.textContent = `${conflicts.length} schedule date${conflicts.length === 1 ? "" : "s"} conflict${conflicts.length === 1 ? "s" : ""} with your lab calendar`;
+  heading.textContent = `${conflicts.length} schedule date${conflicts.length === 1 ? "" : "s"} conflict${conflicts.length === 1 ? "s" : ""} based on your selected start date.`;
   availabilityWarning.append(heading);
 
   const list = document.createElement("ul");
   conflicts.forEach(({ session, booking }) => {
     const item = document.createElement("li");
-    item.textContent = `S${session.number} on ${formatLong(session.date)} may conflict with an existing lab booking (${formatBookingTime(booking.startTime || booking.start)}${booking.endTime || booking.end ? `–${formatBookingTime(booking.endTime || booking.end)}` : ""}).`;
+    item.textContent = `S${session.number} on ${formatLong(session.date)} - ${formatBookingTime(booking.startTime || booking.start)}${booking.endTime || booking.end ? `–${formatBookingTime(booking.endTime || booking.end)}` : ""}.`;
     list.append(item);
   });
   availabilityWarning.append(list);
