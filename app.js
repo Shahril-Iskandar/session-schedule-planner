@@ -1,6 +1,7 @@
 const SESSION_WEEK_OFFSETS = [0, 1, 3, 6, 9, 11];
 const CORE_SESSION_COUNT = SESSION_WEEK_OFFSETS.length;
 const FIRST_SESSION_NUMBER = 2;
+const IS_S1 = new URLSearchParams(window.location.search).get("session")?.toLowerCase() === "s1";
 const ATTENDEE_EMAIL = "s5424179@griffithuni.edu.au";
 const SUPABASE_FUNCTION_URL = "https://rqyogwdvaaxtovysorbm.supabase.co/functions/v1/check-availability";
 
@@ -27,6 +28,22 @@ const availabilityWarning = document.querySelector("#availability-warning");
 let currentDates = [];
 let currentSessions = [];
 let labBookings = [];
+
+if (IS_S1) {
+  document.title = "Session 1 (S1) | Session Schedule Planner";
+  document.querySelector(".eyebrow").textContent = "Session 1 (S1)";
+  document.querySelector(".intro").textContent = "Choose a date for Session 1 (S1) to check lab availability. Confirm your appointment with the research team.";
+  document.querySelector("#planner-title").textContent = "Choose your Session 1 date";
+  document.querySelector(".helper").textContent = "One appointment. Estimated duration: about 3 hours.";
+  document.querySelector('label[for="start-date"]').textContent = "Session 1 date";
+  form.querySelector('button[type="submit"]').textContent = "Check lab availability →";
+  labStatus.textContent = "Lab availability is checked when you select Check lab availability.";
+  document.querySelector(".results-header h2").textContent = "Your Session 1 date";
+  emptyState.querySelector("p").textContent = "Your Session 1 date will appear here.";
+  document.querySelector(".calendar-heading p:not(.section-number)").textContent = "Your Session 1 date is highlighted.";
+  document.querySelector(".calendar-legends").replaceChildren();
+  document.querySelector("footer span:last-child").textContent = "Session 1 (S1) · About 3 hours";
+}
 
 function parseLocalDate(value) {
   const [year, month, day] = value.split("-").map(Number);
@@ -59,6 +76,9 @@ function alignToWeekday(date, weekday) {
 }
 
 function buildSessions(startDate) {
+  if (IS_S1) {
+    return [{ date: new Date(startDate), number: 1, name: "Session 1", timing: "Single session", duration: "About 3 hours", type: "core" }];
+  }
   const coreSessions = SESSION_WEEK_OFFSETS.map((weeks, index) => ({
     date: addWeeks(startDate, weeks),
     number: FIRST_SESSION_NUMBER + index,
@@ -184,7 +204,8 @@ function parseLabCalendar(text) {
 }
 
 function renderLabStatus() {
-  labStatus.textContent = `${labBookings.length} date${labBookings.length === 1 ? "" : "s"} in conflict with existing lab booking${labBookings.length === 1 ? "" : "s"}.`;
+  const count = currentSessions.filter((session) => labBookings.some((booking) => booking.dates.includes(dateKey(session.date)))).length;
+  labStatus.textContent = `${count} date${count === 1 ? "" : "s"} in conflict with existing lab booking${count === 1 ? "" : "s"}.`;
 }
 
 async function loadLabCalendar() {
@@ -239,7 +260,8 @@ function renderAvailabilityWarning() {
   if (!conflicts.length) return;
 
   const heading = document.createElement("strong");
-  heading.textContent = `${conflicts.length} schedule date${conflicts.length === 1 ? "" : "s"} conflict${conflicts.length === 1 ? "s" : ""} based on your selected start date.`;
+  const count = new Set(conflicts.map(({ session }) => dateKey(session.date))).size;
+  heading.textContent = `${count} schedule date${count === 1 ? "" : "s"} conflict${count === 1 ? "s" : ""} based on your selected ${IS_S1 ? "date" : "start date"}.`;
   availabilityWarning.append(heading);
 
   const list = document.createElement("ul");
@@ -276,7 +298,7 @@ function renderCalendars() {
   const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   calendarMonths.replaceChildren();
 
-  const sessionMonths = getMonthsBetween(currentDates[0], currentDates[CORE_SESSION_COUNT - 1]);
+  const sessionMonths = getMonthsBetween(currentDates[0], IS_S1 ? currentDates[0] : currentDates[CORE_SESSION_COUNT - 1]);
   currentDates.slice(CORE_SESSION_COUNT).forEach((date) => {
     const alreadyIncluded = sessionMonths.some(
       (month) => month.getFullYear() === date.getFullYear() && month.getMonth() === date.getMonth(),
@@ -368,11 +390,11 @@ function renderSchedule(startDate) {
     scheduleList.append(item);
   });
 
-  scheduleSummary.textContent = `Eight appointments in total. Every intervention and follow-up session falls on a ${new Intl.DateTimeFormat("en-AU", { weekday: "long" }).format(startDate)}.`;
+  scheduleSummary.textContent = IS_S1 ? "One appointment. Confirm availability with the research team." : `Eight appointments in total. Every intervention and follow-up session falls on a ${new Intl.DateTimeFormat("en-AU", { weekday: "long" }).format(startDate)}.`;
   emptyState.hidden = true;
   scheduleList.hidden = false;
   scheduleSummary.hidden = false;
-  scheduleActions.hidden = false;
+  scheduleActions.hidden = IS_S1;
   renderCalendars();
   renderAvailabilityWarning();
 }
@@ -384,6 +406,7 @@ form.addEventListener("submit", async (event) => {
   if (!startDate) return;
   const submitButton = form.querySelector("button[type='submit']");
   submitButton.disabled = true;
+  labBookings = [];
   renderSchedule(startDate);
   await loadLabCalendar();
   renderAvailabilityWarning();

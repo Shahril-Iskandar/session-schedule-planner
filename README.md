@@ -73,6 +73,15 @@ Open <http://localhost:8000>. A local server is recommended because browser requ
 
 ## Participant workflow
 
+### Separate participant links
+
+- **Intervention sessions:** use the existing base URL, with no query parameter. This retains the S2–S9 planner, copy, and calendar export.
+- **Session 1 (S1):** append `?session=s1` to that URL (for example, `http://localhost:8000/?session=s1`). Participants select one date and check lab availability. The result shows S1 with an estimated duration of about 3 hours and a single-month calendar. Copy and calendar-export actions are hidden for this availability-only flow.
+
+Both links use the same lab calendar and availability endpoint. The status under **Check lab availability** retains the existing wording, including “0 dates in conflict with existing lab bookings.” Multiple bookings on one date count as one conflicting date, with all booking times listed below the session.
+
+### Intervention workflow
+
 1. Open the planner.
 2. Enter the date of the first intervention session, S2.
 3. Select **Build schedule**.
