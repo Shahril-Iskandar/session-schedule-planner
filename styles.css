@@ -177,3 +177,25 @@ dialog form { margin: 0; padding: 30px; }
   .planner { display: block; border: 0; box-shadow: none; }
   .calendar-section { border: 0; box-shadow: none; break-before: page; }
 }
+
+.booking-picker { margin-bottom: 26px; }
+.booking-picker .picker-helper, #booking-status { color: #d7e3df; font-size: .8rem; line-height: 1.5; }
+.booking-navigation { display: flex; justify-content: space-between; gap: 8px; margin: 14px 0 10px; }
+.booking-navigation button { min-height: 40px; padding: 6px 12px; border: 1px solid #6f8a83; border-radius: 8px; background: transparent; color: white; }
+.booking-picker .calendar-month h3 { background: #e8f1ee; color: var(--green); }
+.booking-picker .calendar-grid { gap: 3px; padding: 8px; }
+.booking-picker .calendar-weekday { font-size: .6rem; }
+.booking-day { width: 100%; min-height: 34px; padding: 0 0 8px; border: 1px solid transparent; background: #f1f5f3; font-size: .82rem; }
+.booking-day::after { position: absolute; bottom: 3px; left: calc(50% - 3px); width: 6px; height: 6px; border: 1px solid var(--green); border-radius: 50%; content: ""; }
+.booking-day.has-bookings { background: #f7d8ce; color: #8c2f1e; }
+.booking-day.has-bookings::after { background: #8c2f1e; border-color: #8c2f1e; }
+.booking-day.is-unknown { background: #eee; color: var(--muted); }
+.booking-day.is-unknown::after { display: none; }
+.booking-day[aria-pressed="true"] { border: 2px solid var(--green); }
+.booking-day[aria-current="date"] { font-weight: 900; text-decoration: underline; }
+.booking-day:hover { box-shadow: inset 0 0 0 1px var(--green); }
+.booking-picker button:focus-visible { outline: 3px solid #ff9c7f; outline-offset: 2px; }
+.booking-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 10px; font-size: .7rem; color: #d7e3df; }
+#booking-details:not(:empty) { padding: 14px; margin-top: 14px; border-radius: 10px; background: #fffdf8; color: var(--ink); font-size: .85rem; line-height: 1.5; }
+#booking-details p { margin: 6px 0 0; }
+#booking-details ul { margin: 6px 0 0; padding-left: 20px; }

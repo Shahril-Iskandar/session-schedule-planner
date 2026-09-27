@@ -152,3 +152,9 @@ It returns a JSON object containing matching `conflicts`. The service-role key i
 5. When lab bookings change, run the calendar sync script; no frontend change is needed.
 
 There are no npm dependencies, compilation steps, or build artifacts.
+
+### Browse lab bookings before choosing a date
+
+Both participant links include a monthly lab booking calendar above the date field, styled like the calendar overview. Use the arrows or **This month** to browse. Filled dots identify dates with bookings; hollow dots indicate no bookings listed. Click a date to populate the date field and view its booking times, then build/check the schedule as before. Booked dates remain selectable because appointments outside existing booking hours may be possible. Times are shown in Brisbane time.
+
+The calendar requests all dates in the displayed month using the existing endpoint. Loading and failed requests show unknown availability, with a retry action on failure. Month requests are isolated from schedule checks and ignore stale responses after navigation. The updated Edge Function also returns intermediate dates of multi-day bookings, excludes an exclusive midnight end, and preserves all-day status. Deploy the updated function alongside the frontend for these multi-day/all-day corrections.

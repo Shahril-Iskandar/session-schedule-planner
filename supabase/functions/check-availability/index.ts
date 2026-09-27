@@ -129,7 +129,7 @@ Deno.serve(async (request) => {
 
         if (
           Number.isNaN(start.getTime()) ||
-          Number.isNaN(end.getTime())
+          Number.isNaN(end.getTime()) || end <= start
         ) {
           return null;
         }
@@ -137,6 +137,8 @@ Deno.serve(async (request) => {
         return {
           startDate: brisbaneDateFormatter.format(start),
           endDate: brisbaneDateFormatter.format(end),
+          lastOccupiedDate: brisbaneDateFormatter.format(new Date(end.getTime() - 1)),
+          isAllDay: Boolean(event.isAllDay),
           startTime: brisbaneTimeFormatter.format(start),
           endTime: brisbaneTimeFormatter.format(end),
         };
@@ -147,11 +149,14 @@ Deno.serve(async (request) => {
     // Return bookings matching requested dates
     // -----------------------------------------
 
-    const conflicts = bookings.filter(
-      (booking) =>
-        dates.includes(booking.startDate) ||
-        dates.includes(booking.endDate),
-    );
+    const conflicts = bookings.flatMap((booking) => {
+      const occupiedDates = dates.filter((date) =>
+        date >= booking.startDate && date <= booking.lastOccupiedDate
+      );
+      if (!occupiedDates.length) return [];
+      const { lastOccupiedDate, ...details } = booking;
+      return [{ ...details, dates: occupiedDates }];
+    });
 
     return jsonResponse({ conflicts });
 

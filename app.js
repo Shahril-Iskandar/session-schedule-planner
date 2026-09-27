@@ -32,9 +32,9 @@ let labBookings = [];
 if (IS_S1) {
   document.title = "Session 1 (S1) | Session Schedule Planner";
   document.querySelector(".eyebrow").textContent = "Session 1 (S1)";
-  document.querySelector(".intro").textContent = "Choose a date for Session 1 (S1) to check lab availability. Confirm your appointment with the research team.";
-  document.querySelector("#planner-title").textContent = "Choose your Session 1 date";
-  document.querySelector(".helper").textContent = "One appointment. Estimated duration: about 3 hours.";
+  document.querySelector(".intro").textContent = "Please select a date for Session 1 (S1) to check lab availability. Confirm your appointment with the research team.";
+  document.querySelector("#planner-title").textContent = "Select your Session 1 date";
+  document.querySelector(".helper").textContent = "Estimated duration: about 3 hours.";
   document.querySelector('label[for="start-date"]').textContent = "Session 1 date";
   form.querySelector('button[type="submit"]').textContent = "Check lab availability →";
   labStatus.textContent = "Lab availability is checked when you select Check lab availability.";
@@ -496,3 +496,150 @@ calendarForm.addEventListener("submit", (event) => {
   URL.revokeObjectURL(link.href);
   calendarDialog.close();
 });
+
+// The month browser has its own request state so browsing cannot overwrite schedule checks.
+const bookingMonth = document.querySelector("#booking-month");
+const bookingStatus = document.querySelector("#booking-status");
+const bookingDetails = document.querySelector("#booking-details");
+const bookingRetry = document.querySelector("#booking-retry");
+let visibleMonth = new Date();
+visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1, 12);
+let monthBookings = [];
+let monthState = "loading";
+let monthRequest = 0;
+
+function bookingDates(booking) {
+  if (booking.dates) return booking.dates;
+  const start = parseLocalDate(booking.startDate || "");
+  const end = parseLocalDate(booking.endDate || booking.startDate || "");
+  if (!start || !end) return [];
+  const dates = [];
+  for (const day = new Date(start); day <= end; day.setDate(day.getDate() + 1)) {
+    if (day.getTime() === end.getTime() && day > start && booking.endTime === "00:00") break;
+    dates.push(dateKey(day));
+  }
+  return dates;
+}
+
+function renderBookingDetails() {
+  bookingDetails.replaceChildren();
+  const selected = parseLocalDate(dateInput.value);
+  if (!selected || selected.getMonth() !== visibleMonth.getMonth() || selected.getFullYear() !== visibleMonth.getFullYear()) return;
+  const title = document.createElement("strong");
+  title.textContent = formatLong(selected);
+  bookingDetails.append(title);
+  const matches = monthBookings.filter((booking) => bookingDates(booking).includes(dateInput.value));
+  const text = document.createElement("p");
+  text.textContent = monthState === "loading" ? "Checking bookings…" : monthState === "error" ? "Availability is unknown. Please retry." : matches.length ? `${matches.length} lab booking${matches.length === 1 ? "" : "s"}:` : "No lab bookings listed for this date.";
+  bookingDetails.append(text);
+  if (monthState !== "ready") return;
+  const list = document.createElement("ul");
+  matches.sort((a, b) => (a.startTime || "").localeCompare(b.startTime || "")).forEach((booking) => {
+    const item = document.createElement("li");
+    const startTime = booking.startTime || booking.start?.time;
+    const endTime = booking.endTime || booking.end?.time;
+    const startLabel = booking.startDate && booking.startDate !== dateInput.value ? `${booking.startDate}, ` : "";
+    const endLabel = booking.endDate && booking.endDate !== dateInput.value ? `${booking.endDate}, ` : "";
+    item.textContent = booking.isAllDay ? "All day" : `${startLabel}${formatBookingTime(startTime)}${endTime ? ` – ${endLabel}${formatBookingTime(endTime)}` : ""}`;
+    list.append(item);
+  });
+  if (matches.length) bookingDetails.append(list);
+}
+
+function renderBookingMonth() {
+  bookingMonth.replaceChildren();
+  bookingMonth.setAttribute("aria-busy", String(monthState === "loading"));
+  const title = document.createElement("h3");
+  title.textContent = new Intl.DateTimeFormat("en-AU", { month: "long", year: "numeric" }).format(visibleMonth);
+  bookingMonth.append(title);
+  const grid = document.createElement("div");
+  grid.className = "calendar-grid";
+  ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach((label) => {
+    const cell = document.createElement("span");
+    cell.className = "calendar-weekday";
+    cell.textContent = label;
+    grid.append(cell);
+  });
+  for (let i = 0; i < visibleMonth.getDay(); i++) {
+    grid.append(document.createElement("span"));
+  }
+  const count = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0).getDate();
+  for (let day = 1; day <= count; day++) {
+    const date = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), day, 12);
+    const key = dateKey(date);
+    const booked = monthBookings.some((booking) => bookingDates(booking).includes(key));
+    const cell = document.createElement("button");
+    cell.type = "button";
+    cell.className = `calendar-day booking-day ${monthState === "ready" ? booked ? "has-bookings" : "no-bookings" : "is-unknown"}`;
+    cell.textContent = day;
+    cell.dataset.date = key;
+    cell.setAttribute("aria-pressed", String(key === dateInput.value));
+    cell.setAttribute("aria-label", `${formatLong(date)}, ${monthState !== "ready" ? "availability unknown" : booked ? "has lab bookings" : "no bookings listed"}`);
+    if (key === dateKey(new Date())) cell.setAttribute("aria-current", "date");
+    cell.addEventListener("click", () => {
+      dateInput.value = key;
+      dateError.hidden = true;
+      renderBookingMonth();
+      bookingMonth.querySelector(`[data-date="${key}"]`).focus();
+    });
+    grid.append(cell);
+  }
+  bookingMonth.append(grid);
+  renderBookingDetails();
+}
+
+async function loadBookingMonth() {
+  const request = ++monthRequest;
+  monthState = "loading";
+  monthBookings = [];
+  bookingRetry.hidden = true;
+  bookingStatus.textContent = "Loading lab bookings…";
+  renderBookingMonth();
+  const dates = Array.from({ length: new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0).getDate() }, (_, index) => dateKey(new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), index + 1, 12)));
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(SUPABASE_FUNCTION_URL, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dates }), signal: controller.signal,
+    });
+    if (!response.ok) throw new Error("Availability request failed");
+    const result = await response.json();
+    if (!Array.isArray(result.conflicts)) throw new Error("Invalid availability response");
+    if (request !== monthRequest) return;
+    monthBookings = result.conflicts;
+    monthState = "ready";
+    const bookedDays = dates.filter((date) => monthBookings.some((booking) => bookingDates(booking).includes(date))).length;
+    bookingStatus.textContent = `${bookedDays} date${bookedDays === 1 ? "" : "s"} with lab bookings this month. Select a date to see times.`;
+  } catch {
+    if (request !== monthRequest) return;
+    monthState = "error";
+    bookingStatus.textContent = "Lab bookings could not be loaded. Availability is unknown.";
+    bookingRetry.hidden = false;
+  } finally {
+    window.clearTimeout(timeout);
+    if (request === monthRequest) renderBookingMonth();
+  }
+}
+
+function moveBookingMonth(offset) {
+  visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + offset, 1, 12);
+  loadBookingMonth();
+}
+document.querySelector("#booking-previous").addEventListener("click", () => moveBookingMonth(-1));
+document.querySelector("#booking-next").addEventListener("click", () => moveBookingMonth(1));
+document.querySelector("#booking-today").addEventListener("click", () => {
+  const today = new Date();
+  visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1, 12);
+  loadBookingMonth();
+});
+bookingRetry.addEventListener("click", loadBookingMonth);
+dateInput.addEventListener("change", () => {
+  const date = parseLocalDate(dateInput.value);
+  if (!date) return;
+  if (date.getFullYear() !== visibleMonth.getFullYear() || date.getMonth() !== visibleMonth.getMonth()) {
+    visibleMonth = new Date(date.getFullYear(), date.getMonth(), 1, 12);
+    loadBookingMonth();
+  } else renderBookingMonth();
+});
+loadBookingMonth();
